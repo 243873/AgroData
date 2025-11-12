@@ -66,6 +66,11 @@ document.addEventListener("DOMContentLoaded", function () {
             try {
                 // Intentar parsear a JSON. Esperamos: { mensaje, rol, id, token }
                 data = JSON.parse(responseBodyText); 
+                console.log("Respuesta de la API:", data); // 👈 DEBUG
+                localStorage.setItem("authToken", data.token); // 👈 DEBUG
+                localStorage.setItem("usuarioRol", data.rol); // 👈 DEBUG
+                localStorage.setItem("usuarioId", data.id); // 👈 DEBUG
+                
             } catch (e) {
                 // Si falla (texto plano de error), el objeto 'data' contendrá el mensaje.
                 data = { mensaje: responseBodyText };
