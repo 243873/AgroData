@@ -1,8 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- URL DEL SERVIDOR ---
+    const BASE_URL = 'http://localhost:8000';
+
     // --- OBTENER ELEMENTOS DEL DOM ---
     const editButton = document.getElementById('editButton');
     const saveButton = document.getElementById('saveButton');
-    const cancelButton = document.getElementById('cancelButton'); // Nuevo botón
+    const cancelButton = document.getElementById('cancelButton');
     const logoutButton = document.getElementById('logoutButton');
     const uploadButton = document.getElementById('uploadButton');
     const imageInput = document.getElementById('imageInput');
@@ -15,153 +18,190 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const welcomeMessage = document.getElementById('welcomeMessage');
 
-    // Selectores para los contenedores de modo
     const viewModeElements = document.querySelectorAll('.view-mode');
     const editModeElements = document.querySelectorAll('.edit-mode');
 
-    // Campos de texto (Modo Vista)
     const userTitleView = document.getElementById('userTitleView');
     const viewCorreo = document.getElementById('viewCorreo');
     const viewTelefono = document.getElementById('viewTelefono');
 
-    // Campos de formulario (Modo Edición)
+    // --- ** CAMPOS DE EDICIÓN DEL NUEVO FORMULARIO ** ---
     const editNombre = document.getElementById('editNombre');
+    const editApellidoPaterno = document.getElementById('editApellidoPaterno'); 
+    const editApellidoMaterno = document.getElementById('editApellidoMaterno'); 
     const emailInput = document.getElementById('emailInput');
     const contactInput = document.getElementById('contactInput');
-    const currentPasswordInput = document.getElementById('currentPassword');
-    const newPasswordInput = document.getElementById('newPassword');
-    const confirmPasswordInput = document.getElementById('confirmPassword');
 
     // --- ESTADO DE LA APLICACIÓN ---
-    let currentUser = JSON.parse(localStorage.getItem('usuarioActual'));
-    let allUsers = JSON.parse(localStorage.getItem('usuarios')) || [];
+    // Usamos el 'usuarioActual' que guardó tu script de login
+    const authInfo = JSON.parse(localStorage.getItem('usuarioActual')); 
+    const RUTA_IMAGEN_PREDEFINIDA = "/Imagenes/perfil.png"; 
+    
+    let fullUserData = null;
+    let originalUserData = {};
     let newProfilePicBase64 = null;
-    let originalUserData = {}; // Para almacenar los datos originales
 
     // --- LÓGICA PRINCIPAL ---
 
-    if (!currentUser) {
-        alert("No se ha iniciado sesión. Redirigiendo...");
+    if (!authInfo || !authInfo.id || !authInfo.token) {
+        alert("No se ha iniciado sesión o la sesión es inválida. Redirigiendo...");
         window.location.href = '../../index.html';
         return;
     }
 
-    const loadUserData = () => {
-        welcomeMessage.textContent = `Bienvenido, ${currentUser.nombre}`;
-        userTitleView.textContent = `${currentUser.nombre} ${currentUser.apellidoPaterno}`;
-        viewCorreo.textContent = currentUser.correo;
-        viewTelefono.textContent = currentUser.telefono;
-        if (currentUser.profilePicture) {
-            profileImage.src = currentUser.profilePicture;
+    /**
+     * Función SÍNCRONA para poblar el DOM con un objeto de datos.
+     */
+    const populateDOM = (data) => {
+        welcomeMessage.textContent = `Bienvenido, ${data.nombre}`;
+        
+        const fullName = `${data.nombre} ${data.apellidoPaterno || ''} ${data.apellidoMaterno || ''}`.trim();
+        userTitleView.textContent = fullName;
+        
+        viewCorreo.textContent = data.correo;
+        viewTelefono.textContent = data.telefono;
+        
+        // Lógica de imagen (correcta)
+        if (data.imagenPerfil && data.imagenPerfil.trim() !== '' && data.imagenPerfil.trim() !== 'default.jpg') {
+            profileImage.src = data.imagenPerfil;
+        } else {
+            profileImage.src = RUTA_IMAGEN_PREDEFINIDA;
         }
         
-        // Guardar datos originales para poder restaurarlos si se cancela
-        originalUserData = {
-            nombre: currentUser.nombre,
-            apellidoPaterno: currentUser.apellidoPaterno,
-            correo: currentUser.correo,
-            telefono: currentUser.telefono,
-            contrasena: currentUser.contrasena,
-            profilePicture: currentUser.profilePicture
-        };
-        
-        editNombre.value = `${currentUser.nombre} ${currentUser.apellidoPaterno}`;
-        emailInput.value = currentUser.correo;
-        contactInput.value = currentUser.telefono;
+        // --- ** POBLAR LOS 5 CAMPOS DE EDICIÓN ** ---
+        editNombre.value = data.nombre || '';
+        editApellidoPaterno.value = data.apellidoPaterno || '';
+        editApellidoMaterno.value = data.apellidoMaterno || '';
+        emailInput.value = data.correo;
+        contactInput.value = data.telefono;
     };
 
+    /**
+     * Carga los datos del usuario desde el backend (GET /perfil/{id})
+     */
+    const loadUserData = async () => {
+        try {
+            const response = await fetch(`${BASE_URL}/perfil/${authInfo.id}`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${authInfo.token}` }
+            });
+
+            if (response.status === 401 || response.status === 403) {
+                throw new Error('Sesión inválida o expirada. Por favor, inicie sesión de nuevo.');
+            }
+            if (!response.ok) {
+                throw new Error(`Error al cargar el perfil: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            
+            fullUserData = data;
+            originalUserData = { ...data }; 
+
+            populateDOM(data);
+            
+        } catch (error) {
+            console.error('Error en loadUserData:', error);
+            alert(error.message);
+            localStorage.removeItem('usuarioActual');
+            window.location.href = '../../index.html';
+        }
+    };
+
+    /**
+     * Activa o desactiva el modo de edición del formulario.
+     */
     const setEditMode = (isEditing) => {
         viewModeElements.forEach(el => el.classList.toggle('hidden', isEditing));
         editModeElements.forEach(el => el.classList.toggle('hidden', !isEditing));
         
+        // ** MODIFICACIÓN **
+        // "Editar" y "Cerrar Sesión" se ocultan/muestran juntos
         editButton.classList.toggle('hidden', isEditing);
+        logoutButton.classList.toggle('hidden', isEditing); // <-- AÑADIDO
+        
         document.getElementById('editActions').classList.toggle('hidden', !isEditing);
         uploadButton.classList.toggle('hidden', !isEditing);
-        
-        // Si se entra en modo edición, cargar los datos actuales
-        if (isEditing) {
-            loadUserData();
-        }
     };
 
+    /**
+     * Restaura los datos desde 'originalUserData' y vuelve al modo vista.
+     */
     const cancelEdit = () => {
-        // Restaurar los datos originales
-        currentUser = {...originalUserData};
-        loadUserData();
-        
-        // Limpiar campos de contraseña
-        currentPasswordInput.value = '';
-        newPasswordInput.value = '';
-        confirmPasswordInput.value = '';
-        
-        // Volver al modo vista
+        populateDOM(originalUserData);
+        fullUserData = { ...originalUserData };
+        newProfilePicBase64 = null; 
         setEditMode(false);
     };
 
-    const saveChanges = () => {
-        const newFullName = editNombre.value.trim().split(' ');
-        const newNombre = newFullName[0] || '';
-        const newApellidoPaterno = newFullName.slice(1).join(' ') || '';
+    /**
+     * Envía los cambios del perfil al backend (PUT /perfil/{id})
+     */
+    const saveChanges = async () => {
+        
+        // --- ** LECTURA DE LOS 5 CAMPOS ** ---
+        const newNombre = editNombre.value.trim();
+        const newApellidoPaterno = editApellidoPaterno.value.trim();
+        const newApellidoMaterno = editApellidoMaterno.value.trim();
         const newCorreo = emailInput.value.trim();
         const newTelefono = contactInput.value.trim();
-        const currentPass = currentPasswordInput.value;
-        const newPass = newPasswordInput.value;
-        const confirmPass = confirmPasswordInput.value;
-
-        let isValid = true;
         
-        if (newPass !== '') {
-            if (currentPass !== currentUser.contrasena) {
-                alert('Error: La contraseña actual es incorrecta.');
-                isValid = false;
-            } else if (newPass !== confirmPass) {
-                alert('Error: Las nuevas contraseñas no coinciden.');
-                isValid = false;
+        const payload = {
+            idUsuario: authInfo.id,
+            nombre: newNombre,
+            apellidoPaterno: newApellidoPaterno,
+            apellidoMaterno: newApellidoMaterno,
+            telefono: newTelefono,
+            correo: newCorreo,
+            imagenPerfil: newProfilePicBase64 || (fullUserData.imagenPerfil || null), 
+            rol: authInfo.rol,
+            // No se envía 'password'
+        };
+
+        try {
+            const response = await fetch(`${BASE_URL}/perfil/${authInfo.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${authInfo.token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.status === 401 || response.status === 403) {
+                throw new Error('Sesión inválida o expirada. No se pudieron guardar los cambios.');
+            }
+
+            // Ya que arreglaste el backend, esto no debería fallar.
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Error al guardar: ${errorText || response.statusText}`);
+            }
+
+            // --- Éxito ---
+            newProfilePicBase64 = null;
+            
+            successModal.classList.remove('hidden');
+            setTimeout(async () => {
+                successModal.classList.add('hidden');
+                await loadUserData(); // Recargar datos
+                setEditMode(false);
+            }, 2000);
+
+        } catch (error) {
+            console.error('Error en saveChanges:', error);
+            alert(error.message); 
+            if (error.message.includes('Sesión inválida')) {
+                localStorage.removeItem('usuarioActual');
+                window.location.href = '../../index.html';
             }
         }
-        
-        if (newCorreo !== currentUser.correo && allUsers.some(user => user.correo === newCorreo)) {
-            alert('Error: El correo electrónico ya está en uso por otra cuenta.');
-            isValid = false;
-        }
-
-        if (!isValid) return;
-
-        currentUser.nombre = newNombre;
-        currentUser.apellidoPaterno = newApellidoPaterno;
-        currentUser.correo = newCorreo;
-        currentUser.telefono = newTelefono;
-        if (newPass !== '') {
-            currentUser.contrasena = newPass;
-        }
-        if (newProfilePicBase64) {
-            currentUser.profilePicture = newProfilePicBase64;
-        }
-
-        const userIndex = allUsers.findIndex(user => user.id === currentUser.id);
-        if (userIndex !== -1) {
-            allUsers[userIndex] = currentUser;
-        }
-
-        localStorage.setItem('usuarioActual', JSON.stringify(currentUser));
-        localStorage.setItem('usuarios', JSON.stringify(allUsers));
-        
-        currentPasswordInput.value = '';
-        newPasswordInput.value = '';
-        confirmPasswordInput.value = '';
-        
-        loadUserData();
-        successModal.classList.remove('hidden');
-        setTimeout(() => {
-            successModal.classList.add('hidden');
-            setEditMode(false);
-        }, 2000);
     };
 
     // --- ASIGNACIÓN DE EVENTOS ---
     editButton.addEventListener('click', () => setEditMode(true));
     saveButton.addEventListener('click', saveChanges);
-    cancelButton.addEventListener('click', cancelEdit); // Nuevo evento para cancelar
+    cancelButton.addEventListener('click', cancelEdit);
 
     uploadButton.addEventListener('click', () => imageInput.click());
     imageInput.addEventListener('change', (event) => {

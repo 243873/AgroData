@@ -8,14 +8,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Modal de Éxito -->
     <div id="successModal" class="modal-overlay hidden">
         <div class="modal-content">
             <img src="/Imagenes/check-circle.png" alt="Éxito" class="success-icon">
             <h2>Se han guardado los cambios</h2>
         </div>
     </div>
-    <!-- Modal de Cerrar Sesión -->
     <div id="logoutModal" class="modal-overlay hidden">
         <div class="modal-content">
             <h2>¿Seguro que desea cerrar sesión?</h2>
@@ -50,7 +48,9 @@
             <div class="profile-container">
                 <div class="profile-header">
                     <h4>Mi perfil</h4>
+                    
                     <div>
+                        <button id="logoutButton" class="btn btn-danger btn-logout">Cerrar Sesión</button>
                         <button id="editButton" class="btn btn-primary">Editar</button>
                         <div id="editActions" class="hidden">
                             <button id="saveButton" class="btn btn-primary">Guardar</button>
@@ -70,34 +70,27 @@
                         <input type="file" id="imageInput" class="hidden" accept="image/*">
                     </div>
                     
-                    <!-- Contenedor principal para toda la información -->
                     <div class="profile-main-content">
                         <p class="user-title" id="userTitleView">Nombre Apellidos</p>
                         
-                        <!-- MODO VISTA (con dos columnas) -->
                         <div class="profile-grid view-mode">
                             <div class="profile-column">
                                 <div class="info-group"><label>Correo electrónico:</label><p id="viewCorreo">ejemplocorreo@gmail.com</p></div>
-                                <div class="info-group"><label>Contacto:</label><p id="viewTelefono">+52 967 000 00</p></div>
                             </div>
                             <div class="profile-column">
-                                <div class="info-group"><label>Contraseña:</label><p class="password-field">************</p></div>
-                                <!-- Botón "Cerrar Sesión" ahora es primario -->
-                                <button id="logoutButton" class="btn btn-primary btn-logout">Cerrar Sesión</button>
-                            </div>
+                                <div class="info-group"><label>Contacto:</label><p id="viewTelefono">+52 967 000 00</p></div>
+                                </div>
                         </div>
 
-                        <!-- MODO EDICIÓN (con dos columnas) -->
                         <div class="profile-grid edit-mode hidden">
                             <div class="profile-column">
-                                <div class="form-group"><label for="editNombre">Nombre Completo:</label><input type="text" id="editNombre"></div>
-                                <div class="form-group"><label for="emailInput">Correo electrónico:</label><input type="email" id="emailInput"></div>
-                                <div class="form-group"><label for="contactInput">Contacto:</label><input type="tel" id="contactInput"></div>
+                                <div class="form-group"><label for="editNombre">Nombre:</label><input type="text" id="editNombre"></div>
+                                <div class="form-group"><label for="editApellidoPaterno">Apellido Paterno:</label><input type="text" id="editApellidoPaterno"></div>
+                                <div class="form-group"><label for="editApellidoMaterno">Apellido Materno:</label><input type="text" id="editApellidoMaterno"></div>
                             </div>
                             <div class="profile-column">
-                                <div class="form-group"><label for="currentPassword">Contraseña Actual:</label><input type="password" id="currentPassword"></div>
-                                <div class="form-group"><label for="newPassword">Nueva contraseña:</label><input type="password" id="newPassword"></div>
-                                <div class="form-group"><label for="confirmPassword">Confirmar contraseña:</label><input type="password" id="confirmPassword"></div>
+                                <div class="form-group"><label for="emailInput">Correo electrónico:</label><input type="email" id="emailInput"></div>
+                                <div class="form-group"><label for="contactInput">Contacto:</label><input type="tel" id="contactInput"></div>
                             </div>
                         </div>
                     </div>
@@ -107,4 +100,4 @@
     </div>
     <script src="perfilCliente.js"></script>
 </body>
-</html>
+</html> 

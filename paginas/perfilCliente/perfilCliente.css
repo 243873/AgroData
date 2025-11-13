@@ -44,12 +44,27 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: 'Montserrat', san
     gap: 40px; /* Espacio entre las columnas */
 }
 
+/* * ** LÍNEA DIVISORIA (AÑADIDA) **
+ * Se aplica a la segunda columna (en ambos modos)
+*/
+.profile-grid .profile-column + .profile-column {
+    border-left: 1px solid #E9ECEF;
+    padding-left: 40px;
+}
+
 /* Modo Vista */
 .info-group { margin-bottom: 25px; }
 .info-group label, .form-group label { display: block; font-size: 14px; font-weight: 600; color: #333; margin-bottom: 8px; }
 .info-group p { font-size: 16px; margin: 0; color: #555; }
 .password-field { font-family: monospace; letter-spacing: 2px; }
-.btn-logout { width: 100%; }
+
+/* * ** BOTÓN LOGOUT (MODIFICADO) **
+ * Se hizo más pequeño para que quepa en el header.
+*/
+.btn-logout {
+    font-size: 13px;
+    padding: 8px 20px;
+}
 
 /* Modo Edición */
 .form-group { margin-bottom: 20px; }
